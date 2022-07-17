@@ -3,8 +3,8 @@ This repository contains code accompanying the paper "Deep learning of diffeomor
 of shapes" by Celledoni, Glöckner, Riseth, Schmeding. The figures from the paper may be seen and created from the notebooks:
 1. [Curve Reparametrization](notebooks/curves-reparametrization.ipynb)
 2. [Surface Reparametrization](notebooks/surfaces-reparametrization.ipynb)
-    1. [MNIST Digit Matching](notebooks/digit-matching.ipynb)
-3. [Norm Estimates](notebooks/norm-estimates.ipynb)
+3. [MNIST Digit Matching](notebooks/digit-matching.ipynb)
+4. [Norm Estimates](notebooks/norm-estimates.ipynb)
 
 ---
 ## Setup
@@ -27,7 +27,7 @@ Y. LeCun, L. Bottou, Y. Bengio and P. Haffner: Gradient-Based Learning Applied t
 
 The image data may be downloaded by running
 ```bash
-./donwload-mnist.sh
+./download-mnist.sh
 ```
 
 
