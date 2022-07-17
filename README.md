@@ -1,4 +1,6 @@
 # FuncShape
+[![DOI](https://zenodo.org/badge/514912162.svg)](https://zenodo.org/badge/latestdoi/514912162)
+
 This repository contains code accompanying the paper "Deep learning of diffeomorphisms for optimal reparametrizations
 of shapes" by Celledoni, Glöckner, Riseth, Schmeding. The figures from the paper may be seen and created from the notebooks:
 1. [Curve Reparametrization](notebooks/curves-reparametrization.ipynb)
