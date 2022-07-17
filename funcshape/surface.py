@@ -13,7 +13,7 @@ class Surface:
         return torch.cat([ci(X).unsqueeze(dim=-1) for ci in self.S], dim=-1)
 
     def partial_derivative(self, X, component, h=3.4e-4):
-        H = torch.zeros_like(X)
+        H = torch.zeros_like(X, device=X.device)
         H[..., component] = h
         return 0.5 * torch.cat([(ci(X + H) - ci(X - H)).unsqueeze(dim=-1) for ci in self.S], dim=-1) / h
 

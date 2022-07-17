@@ -53,6 +53,6 @@ class SRNF:
         u = torch.norm(n, dim=-1, keepdim=True)
         return torch.where(
             torch.abs(u) < 1e-7,
-            torch.zeros((u.shape[0], self.s.dim)),
+            torch.zeros((u.shape[0], self.s.dim), device=X.device),
             torch.sqrt(self.s.volume_factor(X, h)) * n / torch.norm(n, dim=-1, keepdim=True)
         )

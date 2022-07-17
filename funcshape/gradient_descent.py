@@ -13,7 +13,7 @@ def error_func(Q, r, y, u):
     return 0.5 * (((Q - u * r(y))**2).sum() - 0.5 * ((Q[0]-u[0]*r(y[0]))**2 + (Q[-1]-u[-1]*r(y[-1]))**2).sum()) / (Q.shape[0]-1)
 
 def eval_palais(x, N):
-    z = N * x  # * 2pi, but this is computed in the outer gradient_descent function
+    z = N * x  # * 2pi, but this is included in the definition of N
     V1 = torch.sin(z) / (np.sqrt(2) * pi * N)
     V2 = (1. - torch.cos(z)) / (np.sqrt(2) * pi * N)
     return torch.cat((V1, V2), dim=-1)

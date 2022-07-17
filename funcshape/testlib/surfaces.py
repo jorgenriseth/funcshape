@@ -1,3 +1,9 @@
+import numpy as np
+import torch
+
+from funcshape.diffeomorphism import Diffeomorphism2D
+from funcshape.surface import Surface
+
 class CylinderWrap(Surface):
     def __init__(self):
         super().__init__((
@@ -16,7 +22,7 @@ class HyperbolicParaboloid(Surface):
         ))
 
 
-class LogStepQuadratic(Diffeomorphism):
+class LogStepQuadratic(Diffeomorphism2D):
     def __init__(self, a=20., b=0.1):
         assert 0. < b < 1., "b must be between 0 and 1."
         c = (1 - b)
@@ -32,7 +38,7 @@ def angle(x):
     return 0.5 * np.pi * torch.sin(np.pi * x[..., 0]) * torch.sin(np.pi * x[..., 1])
 
 
-class RotationDiffeomorphism(Diffeomorphism):
+class RotationDiffeomorphism(Diffeomorphism2D):
     def __init__(self):
         super().__init__((
             lambda x: (x[..., 0] - 0.5) * torch.cos(angle(x)) -

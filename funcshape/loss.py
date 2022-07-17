@@ -30,6 +30,7 @@ class ShapeDistanceBase(ABC):
 
     def to(self, device):
         self.X = self.X.to(device)
+        self.Q = self.Q.to(device)
         return self
 
     def __call__(self, network):
@@ -38,7 +39,6 @@ class ShapeDistanceBase(ABC):
 
         # Check for invalid derivatives. Retry projection, or raise error.
         if U.min() < 0. or torch.isnan(U.min()):
-            # Retry once:
             network.project()
             Y = network(self.X)
             U = self.get_determinant(network)
@@ -67,17 +67,23 @@ class SurfaceDistance(ShapeDistanceBase):
         return batch_determinant(network.derivative(self.X, self.h))
 
 
-# class ComponentDistance(ShapeDistanceBase):
-#     def __init__(self, q, r, k, h=1e-4, component=-1):
-#         super().__init__(q, r, k, h=h)
-#         self.component = component
+class ComponentDistance(ShapeDistanceBase):
+    def __init__(self, q, r, k, h=1e-4, component=-1):
+        super().__init__(q, r, k, h=h)
+        self.component = component
 
-#     def loss_func(self, U, Y):
-#         return component_mse(self.Q, torch.sqrt(U+1e-8) * self.r(Y), self.component)
+    def loss_func(self, U, Y):
+        return component_mse(self.Q, torch.sqrt(U+1e-8) * self.r(Y), self.component)
 
 
-# class ImageComponentDistance(SurfaceDistance, ComponentDistance):
-#     pass
+
+def component_mse(inputs, targets, component: int):
+    """ Stored here for now, will probably be moved elsewhere in the future"""
+    return torch.sum((inputs[..., component] - targets[..., component])**2) / inputs[..., component].nelement()
+
+
+class ImageComponentDistance(SurfaceDistance, ComponentDistance):
+    pass
 
 
 # class GraphComponentDistance(CurveDistance, ComponentDistance):

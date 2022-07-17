@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -44,7 +45,7 @@ def plot_diffeomorphism_1d(f, npoints=201, ax=None, **kwargs):
 
 
 def plot_derivative(f, npoints=401, ax=None, **kwargs):
-    return plot_diffeomorphism(lambda x: f.derivative(x, h=1e-4), npoints, ax,
+    return plot_diffeomorphism_1d(lambda x: f.derivative(x, h=1e-4), npoints, ax,
                                **kwargs)
 
 
