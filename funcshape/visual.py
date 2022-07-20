@@ -1,12 +1,28 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+from cycler import cycler
 from matplotlib import cm
 from matplotlib.colors import Normalize
 from matplotlib.collections import LineCollection
 
 from funcshape.utils import col_linspace
 from funcshape.diffeomorphism import Diffeomorphism1D
+
+
+def create_figsaver(figpath):
+    figpath = Path(figpath)
+    figpath.mkdir(exist_ok=True, parents=True)
+    def savefig(name, fig=None):
+        path = figpath / name
+        if fig is None:
+            plt.savefig(figpath / name, bbox_inches="tight")
+        else:
+            fig.savefig(figpath / name, bbox_inches="tight")
+    return savefig
+
 
 def plot_curve(c, npoints=201, dotpoints=None, ax=None, **kwargs):
     X = torch.linspace(0, 1, npoints).unsqueeze(-1)
@@ -103,3 +119,11 @@ def plot_surface(f, ax=None, colornorm=None, k=32, camera=(30, -60), **kwargs):
 def get_common_colornorm(surfaces, k=128):
     colors = [get_plot_data(fi.volume_factor, k=k).squeeze() for fi in surfaces]
     return Normalize(vmin=min([ci.min() for ci in colors]), vmax=max([ci.max() for ci in colors]))
+        
+        
+# Create cycler object for gray-scale figures. Use any styling from above you please
+MONOCHROME = (
+    cycler('color', ['k']) * 
+    cycler('marker', ['', 'd', '^', '.']) * 
+    cycler('linestyle', ['-', '--', ':', '-.'])
+)
