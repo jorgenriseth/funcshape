@@ -84,17 +84,3 @@ def component_mse(inputs, targets, component: int):
 
 class ImageComponentDistance(SurfaceDistance, ComponentDistance):
     pass
-
-
-# class GraphComponentDistance(CurveDistance, ComponentDistance):
-#     pass
-
-
-# class ImageWarpDistance(SurfaceDistance):
-#     def __init__(self, k, h=1e-4):
-#         self.h = h
-#         self.X = self.create_point_collection(k)
-#         self.k = k**self.X.shape[-1]
-        
-#     def loss_func(self, U, Y):
-#         return ((self.X - Y)**2 + 1 / U**2).sum() / self.k
