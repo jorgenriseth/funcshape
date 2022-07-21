@@ -6,7 +6,8 @@ of shapes" by Celledoni, Glöckner, Riseth, Schmeding. The figures from the pape
 1. [Curve Reparametrization](notebooks/curves-reparametrization.ipynb)
 2. [Surface Reparametrization](notebooks/surfaces-reparametrization.ipynb)
 3. [MNIST Digit Matching](notebooks/digit-matching.ipynb)
-4. [Norm Estimates](notebooks/norm-estimates.ipynb)
+4. [Network Size Convergence Plots](notebooks/convergence-plots.ipynb)
+5. [Norm Estimates](notebooks/norm-estimates.ipynb)
 
 ---
 ## Setup
