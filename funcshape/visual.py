@@ -88,6 +88,9 @@ def plot_grid(x, y, ax=None, **kwargs):
 
 
 def plot_diffeomorphism_2d(f, k=16, ax=None, **kwargs):
+    if ax is None:
+        fig, ax = plt.subplots()
+
     K = k**2
     X = torch.rand(K, 2)
     X, Y = torch.meshgrid((torch.linspace(0, 1, k), torch.linspace(0, 1, k)))
@@ -119,6 +122,59 @@ def plot_surface(f, ax=None, colornorm=None, k=32, camera=(30, -60), **kwargs):
 def get_common_colornorm(surfaces, k=128):
     colors = [get_plot_data(fi.volume_factor, k=k).squeeze() for fi in surfaces]
     return Normalize(vmin=min([ci.min() for ci in colors]), vmax=max([ci.max() for ci in colors]))
+
+
+def save_surface_reparam(savepath, f, g, RN, camera, k, clear=False):
+    path = Path(savepath).resolve()
+    path.mkdir(parents=True, exist_ok=True)
+    fafter = f.compose(RN)
+    norm = get_common_colornorm((f, g, fafter), k=k)
+    
+    fignames = ["target.pdf", "subject.pdf", "reparametrized.pdf"]
+    for func, savename in zip([f, g, fafter], fignames):
+        plot_surface(func, k=k, colornorm=norm, camera=camera)   
+        plt.savefig(str(path / savename), bbox_inches="tight")
+
+    if clear:
+        plt.close('all')
+    
+
+def save_diffeomorphism_2d(savepath, γ, RN, k, figsize=None, clear=False):
+    if figsize is None:
+        figsize=(4, 4)
+    path = Path(savepath).resolve()
+    path.mkdir(parents=True, exist_ok=True)
+    
+    fig, ax = plt.subplots(figsize=figsize)
+    plot_diffeomorphism_2d(γ, k=k, color="k", ax=ax)
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.savefig(str(path / "diffeomorphism-target.pdf"), bbox_inches="tight")
+
+    fig, ax = plt.subplots(figsize=figsize)
+    plot_diffeomorphism_2d(RN, k=k, color="k", ax=ax)
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.savefig(str(path / "diffeomorphism-found.pdf"), bbox_inches="tight")
+    
+    if clear:
+        plt.close('all')
+
+
+def save_error_plot(savepath, errors, rel=True, ax=None):
+    path = Path(savepath).resolve()
+    path.mkdir(parents=True, exist_ok=True)
+    if ax is None:
+        fig, ax = plt.subplots()
+    if rel:
+        e = errors / errors[0]
+        extension = '-rel'
+    else:
+        extension = ""
+    plt.semilogy(e)
+    plt.ylabel("Error", fontsize=16)
+    plt.xlabel("Iteration", fontsize=16)
+    plt.savefig(str(path / f"error{extension}.pdf"), bbox_inches="tight")
         
         
 # Create cycler object for gray-scale figures. Use any styling from above you please
