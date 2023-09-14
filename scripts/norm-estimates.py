@@ -43,7 +43,7 @@ def plot_norm_estimates(name, figblock=True):
 
         axes[1][idx].legend(loc="lower left")
         axes[1][idx].set_xlabel("d")
-        axes[0][idx].set_xticks(ticks=D)
+        axes[1][idx].set_xticks(ticks=D)
 
     savefig(name, fig)
     plt.show(block=figblock)
@@ -191,4 +191,9 @@ def random_norm_estimate(L, d, k, projection_norm_estimate, projection_scale_str
                  for _ in range(runs)])
 
 if __name__ == '__main__':
-    plot_norm_estimates("Fig2.eps", False)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--show", action="store_true")
+    args = parser.parse_args()
+    print()
+    plot_norm_estimates("Fig2.eps", args.show)

@@ -6,6 +6,7 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 
+from funcshape.curve import ComposedCurve
 from funcshape.networks import CurveReparametrizer
 from funcshape.layers.sineseries import SineSeries
 from funcshape.loss import CurveDistance
@@ -28,6 +29,7 @@ def gradient_descent_comparison(savename, block=True):
     c2 = Circle()
     g = LogStepDiff()
     c1 = c2.compose(g)
+    c1 = ComposedCurve(c2, g)
     q = SRVT(c1)
     r = SRVT(c2)
 
@@ -47,7 +49,7 @@ def gradient_descent_comparison(savename, block=True):
     y_deep = RN(x)
 
     # Gradient Descent
-    y_gd, error_gd = gradient_descent(q, r, k, n, verbose=True)
+    y_gd, error_gd = gradient_descent(lambda x: q(x, h=None), lambda x: r(x, h=None), k, n, h=1e-4, verbose=True)
 
     # Plot curves
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), gridspec_kw={"height_ratios": [1, 0.75]})
@@ -55,7 +57,6 @@ def gradient_descent_comparison(savename, block=True):
     plot_curve(c2, npoints=k, dotpoints=41, ax=axes[0][1])
     for ax in axes[0]:
         ax.set_aspect("equal")
-    # plt.show()
 
     # Plot diffeomorphism and subplot
     # fig, (ax[1][1], ax[1][1]) = plt.subplots(1, 2, figsize=(10, 4))
@@ -71,6 +72,13 @@ def gradient_descent_comparison(savename, block=True):
     plt.tight_layout()
     plt.tight_layout()
     savefig(savename, fig)
+    if block:
+        plt.show(block=block)
 
 if __name__ == "__main__":
-    gradient_descent_comparison("Fig1.eps", block=False)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--show", action="store_true")
+    args = parser.parse_args()
+    print()
+    gradient_descent_comparison("Fig1.eps", block=args.show)
