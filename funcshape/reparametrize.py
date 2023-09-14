@@ -3,16 +3,20 @@ import numpy as np
 from funcshape.utils import numpy_nans
 
 
-def reparametrize(network, loss, optimizer, iterations, logger, scheduler=None, projection_kwargs=None):
+def reparametrize(
+    network, loss, optimizer, iterations, logger, scheduler=None, projection_kwargs=None
+):
     if projection_kwargs is None:
         projection_kwargs = {}
 
     if isinstance(optimizer, torch.optim.LBFGS):
-        return reparametrize_lbfgs(network, loss, optimizer, logger, scheduler, projection_kwargs)
+        return reparametrize_lbfgs(
+            network, loss, optimizer, logger, scheduler, projection_kwargs
+        )
 
     # Evaluate initial error
     logger.start()
-    error = numpy_nans(iterations+1)
+    error = numpy_nans(iterations + 1)
     error[0] = float(loss(network))
 
     for i in range(iterations):
@@ -31,14 +35,16 @@ def reparametrize(network, loss, optimizer, iterations, logger, scheduler=None, 
         optimizer.step()
         network.project(**projection_kwargs)
 
-        error[i+1] = loss.get_last()
-        logger.log(it=i, value=error[i+1])
+        error[i + 1] = loss.get_last()
+        logger.log(it=i, value=error[i + 1])
 
     logger.stop()
     return error
 
 
-def reparametrize_lbfgs(network, loss, optimizer, logger, scheduler=None, projection_kwargs=None):
+def reparametrize_lbfgs(
+    network, loss, optimizer, logger, scheduler=None, projection_kwargs=None
+):
     if projection_kwargs is None:
         projection_kwargs = {}
 
@@ -52,7 +58,7 @@ def reparametrize_lbfgs(network, loss, optimizer, logger, scheduler=None, projec
     func_evals = 0
 
     global error
-    error = numpy_nans(iterations+2)
+    error = numpy_nans(iterations + 2)
     # error[0] = float(loss(network))
     it = [0]
 

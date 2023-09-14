@@ -12,7 +12,8 @@ class ShapeReparamBase(Module, ABC):
         self.layerlist = ModuleList(layerlist)
         for layer in layerlist:
             assert isinstance(
-                layer, DeepShapeLayer), "Layers must inherit DeepShapeLayer"
+                layer, DeepShapeLayer
+            ), "Layers must inherit DeepShapeLayer"
 
         self.project()
 
@@ -22,7 +23,7 @@ class ShapeReparamBase(Module, ABC):
         return x
 
     @abstractmethod
-    def derivative(self, x, h=1e-4):
+    def derivative(self, x, h):
         pass
 
     def project(self, **kwargs):
@@ -51,7 +52,7 @@ class ShapeReparamBase(Module, ABC):
 
 
 class CurveReparametrizer(ShapeReparamBase):
-    def derivative(self, x, h=1e-4):
+    def derivative(self, x, h):
         dc = ones_like(x)
         for layer in self.layerlist:
             dc = dc * layer.derivative(x, h)
@@ -60,7 +61,7 @@ class CurveReparametrizer(ShapeReparamBase):
 
 
 class SurfaceReparametrizer(ShapeReparamBase):
-    def derivative(self, x, h=1e-4):
+    def derivative(self, x, h):
         Df = eye(2, 2, device=x.device)
         for layer in self.layerlist:
             Df = layer.derivative(x, h) @ Df

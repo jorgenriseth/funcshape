@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+
 def numpy_nans(dim, *args, **kwargs):
     arr = np.empty(dim, *args, **kwargs)
     arr.fill(np.nan)

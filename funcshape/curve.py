@@ -5,9 +5,11 @@ from typing import Callable
 from funcshape.derivatives import central_differences
 from funcshape.diffeomorphism import Diffeomorphism1D
 
+
 class Curve:
-    """ Define a torch-compatible parametrized curve class, with finite
-    difference approximation of derivatives, and composition operator. """
+    """Define a torch-compatible parametrized curve class, with finite
+    difference approximation of derivatives, and composition operator."""
+
     def __init__(self, component_function_tuple):
         self.C = tuple(component_function_tuple)
         self.dim = len(self.C)
@@ -24,19 +26,22 @@ class Curve:
     def compose(self, f):
         return Curve((self.compose_component(i, f) for i in range(self.dim)))
 
+
 class TorchCurve:
     def __init__(self, components: list[Callable]):
         self.components = components
 
     def __call__(self, x):
-        return torch.stack([
-            ci(x) for ci in self.components
-        ], dim=-1)
-    
+        return torch.stack([ci(x) for ci in self.components], dim=-1)
+
     def derivative(self, x, h):
-        return torch.stack([
-            torch.autograd.grad(ci(x), x, torch.ones_like(x))[0] for ci in self.components
-        ], dim=-1)       
+        return torch.stack(
+            [
+                torch.autograd.grad(ci(x), x, torch.ones_like(x))[0]
+                for ci in self.components
+            ],
+            dim=-1,
+        )
 
 
 class ComposedCurve(Curve):
