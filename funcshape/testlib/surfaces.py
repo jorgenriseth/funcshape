@@ -12,6 +12,21 @@ class CylinderWrap(Surface):
             lambda x: x[..., 1]
         ))
 
+    def partial_derivative(self, X, component, h):
+        if component == 0:
+            return torch.stack([
+                2*np.pi * torch.cos(2*np.pi*X[..., 0]),
+                4*np.pi * torch.cos(4*np.pi*X[..., 0]),
+                torch.zeros_like(X[..., 0])
+            ], dim=-1)
+        elif component == 1:
+            return torch.stack([
+                torch.zeros_like(X[..., 0]),
+                torch.zeros_like(X[..., 0]),
+                torch.ones_like(X[..., 1])
+            ], dim=-1)
+        return ValueError(f"Component should be 0 or 1, got {component}")
+
 
 class HyperbolicParaboloid(Surface):
     def __init__(self):
@@ -20,6 +35,24 @@ class HyperbolicParaboloid(Surface):
             lambda x: x[..., 1],
             lambda x: (x[..., 0] - 0.5)**2 - (x[..., 1] - 0.5)**2
         ))
+
+
+    def partial_derivative(self, X, component, h):
+        id_i = torch.zeros_like(X)
+        id_i[..., component] = 1.0
+        if component == 0:
+            return torch.stack([
+                torch.ones_like(X[..., component]),
+                torch.zeros_like(X[..., component]),
+                2 * (X[..., 0]  - 0.5),
+            ], dim=-1)
+        elif component == 1:
+            return torch.stack([
+                torch.zeros_like(X[..., component]),
+                torch.ones_like(X[..., component]),
+                2 * (X[..., 1]  - 0.5),
+            ], dim=-1)
+        return ValueError(f"Component should be 0 or 1, got {component}")
 
 
 class LogStepQuadratic(Diffeomorphism2D):

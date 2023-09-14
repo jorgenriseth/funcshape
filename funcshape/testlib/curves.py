@@ -1,8 +1,9 @@
 import torch
 import numpy as np
 from numpy import pi
+from torch import tanh, log, cosh
 
-from funcshape.curve import Curve
+from funcshape.curve import Curve, TorchCurve
 from funcshape.diffeomorphism import Diffeomorphism1D
 
 
@@ -13,6 +14,20 @@ class Circle(Curve):
             lambda x: torch.sin(2*pi*x)
         ))
 
+    def derivative(self, X, h=None):
+        return torch.cat([
+            -2*pi*torch.sin(2*pi*X),
+            +2*pi*torch.cos(2*pi*X)
+        ], dim=-1)
+
+
+class TorchCircle(TorchCurve):
+    def __init__(self):
+        super().__init__([
+            lambda x: torch.cos(2*pi*x),
+            lambda x: torch.sin(2*pi*x)
+        ])
+
 
 class Infinity(Curve):
     def __init__(self):
@@ -21,7 +36,7 @@ class Infinity(Curve):
             lambda x: torch.sin(4*pi*x)
         ))
 
-    def derivative(self, X, h=0.0001):
+    def derivative(self, X, h=None):
         return torch.cat([
             -2*pi*torch.sin(2*pi*X),
             4*pi*torch.cos(4*pi*X)
@@ -74,10 +89,17 @@ class QuadDiff(Diffeomorphism1D):
 
 class LogStepDiff(Diffeomorphism1D):
     def __init__(self, a=20):
+        self.a = a
         super().__init__(
             lambda x: (0.5 * torch.log(a*x+1) / np.log(a+1.)
                        + 0.25 * (1 + torch.tanh(a*(x-0.5)) / np.tanh(a+1.)))
         )
+
+    def derivative(self, x, h=None):
+        a = self.a
+        over = a * (((a*x + 1) * np.log(a+1))/ cosh(a*(x-0.5))**2 + 2*np.tanh(a+1.0))
+        under = 4 * (a*x+1)*np.log(a+1.0)*np.tanh(a+1.0)
+        return over / under
 
 
 class OptimalCircleLine(Diffeomorphism1D):
