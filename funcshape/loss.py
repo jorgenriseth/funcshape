@@ -74,7 +74,7 @@ class ComponentDistance(ShapeDistanceBase):
         self.component = component
 
     def loss_func(self, U, Y):
-        return component_mse(self.Q, torch.sqrt(U + 1e-8) * self.r(Y), self.component)
+        return component_mse(self.Q, torch.sqrt(U + 1e-8) * self.r(Y, self.h), self.component)
 
 
 def component_mse(inputs, targets, component: int):

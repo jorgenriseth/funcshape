@@ -1,5 +1,11 @@
-from funcshape.testlib.curves import Infinity, LogStepDiff
-from funcshape.transforms import Qmap1D, SRVT, Qmap2D
+import json
+
+import torch
+import matplotlib.pyplot as plt
+
+from funcshape.curve import ComposedCurve
+from funcshape.testlib.curves import Infinity, LogStepDiff, Circle
+from funcshape.transforms import Qmap1D, SRVT, Qmap2D, SRNF
 from funcshape.reparametrize import reparametrize
 from funcshape.layers.sineseries import SineSeries
 from funcshape.layers.sinefourier import SineFourierLayer
@@ -9,18 +15,28 @@ from funcshape.logging import Silent
 from funcshape.visual import create_figsaver, MONOCHROME
 from funcshape.testlib.surfaces import RotationDiffeomorphism, HyperbolicParaboloid
 
-import torch
-import matplotlib.pyplot as plt
-
 from savefig import savefig
 
+import torch
+torch.set_default_dtype(torch.float64)
 
-def curve_reparametrization(c1, c2, num_layers, num_functions, transform="qmap", k=256, max_iter=200, device="cuda",
-                            **kwargs):
+
+def curve_reparametrization(
+    c1,
+    c2,
+    num_layers,
+    num_functions,
+    k,
+    max_iter,
+    transform="qmap",
+    device="cuda",
+    **kwargs,
+):
     print(f"Layers: {num_layers:4d}, functions: {num_functions:3d}\r", end="")
     if device == "cuda":
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        if device == "cpu": raise RuntimeError("cuda not available")
+        if device == "cpu":
+            raise RuntimeError("cuda not available")
     if transform.lower() == "qmap":
         q, r = Qmap1D(c1), Qmap1D(c2)
     elif transform.lower() == "srvt":
@@ -28,21 +44,41 @@ def curve_reparametrization(c1, c2, num_layers, num_functions, transform="qmap",
     else:
         raise ValueError("Transform should be 'qmap' or 'srvt'")
 
-    RN = CurveReparametrizer(
-        [SineSeries(num_functions) for _ in range(num_layers)]
+    RN = CurveReparametrizer([SineSeries(num_functions) for _ in range(num_layers)])
+    RN.to(device)
+    loss = CurveDistance(q, r, k=1024, h=None).to(device)
+    optimizer = torch.optim.LBFGS(
+        RN.parameters(),
+        max_iter=max_iter,
+        max_eval=3*max_iter,
+        history_size=max_iter,
+        line_search_fn="strong_wolfe",
+        tolerance_grad=1e-12,
+        tolerance_change=1e-12,
     )
-    optimizer = torch.optim.LBFGS(RN.parameters(), max_iter=max_iter,
-                                  line_search_fn="strong_wolfe")
-    loss = CurveDistance(q, r, k=k)
-    error = reparametrize(RN, loss, optimizer, 1, **kwargs)
-    RN.to("cpu"), loss.to("cpu"); # Need on CPU for plotting.
+    error = reparametrize(RN, loss, optimizer, None, **kwargs)
+    RN.to("cpu"), loss.to("cpu")
+    RN.detach()
+    # Need on CPU for plotting.
     return error[-1]
 
-def surface_reparametrization(c1, c2, num_layers, num_functions, transform="qmap", k=32, max_iter=200, device="cpu", **kwargs):
+
+def surface_reparametrization(
+    c1,
+    c2,
+    num_layers,
+    num_functions,
+    transform="qmap",
+    k=32,
+    max_iter=200,
+    device="cpu",
+    **kwargs,
+):
     print(f"Layers: {num_layers:4d}, functions: {num_functions:3d}\r", end="")
     if device == "cuda":
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        if device == "cpu": raise RuntimeError("cuda not available")
+        if device == "cpu":
+            raise RuntimeError("cuda not available")
 
     if transform.lower() == "qmap":
         q, r = Qmap2D(c1), Qmap2D(c2)
@@ -54,24 +90,31 @@ def surface_reparametrization(c1, c2, num_layers, num_functions, transform="qmap
     RN = SurfaceReparametrizer(
         [SineFourierLayer(num_functions) for _ in range(num_layers)]
     ).to(device)
-    optimizer = torch.optim.LBFGS(RN.parameters(), max_iter=max_iter,
-                                  line_search_fn="strong_wolfe")
+    optimizer = torch.optim.LBFGS(
+        RN.parameters(),
+        max_iter=max_iter,
+        max_eval=3*max_iter,
+        history_size=max_iter,
+        line_search_fn="strong_wolfe",
+    )
     loss = SurfaceDistance(q, r, k=k).to(device)
     error = reparametrize(RN, loss, optimizer, 1, **kwargs)
-    RN.to("cpu"), loss.to("cpu"); # Need on CPU for plotting.
+    RN.to("cpu"), loss.to("cpu") # Need on CPU for plotting.
     return error[-1]
 
 
-def create_convergence_dict(c0, c1, num_layers, num_functions, reparam_wrapper, **kwargs):
+def create_convergence_dict(
+    c0, c1, num_layers, num_functions, reparam_wrapper, **kwargs
+):
     return {
-        i: {
-            j: reparam_wrapper(c0, c1, i, j, **kwargs) for j in num_functions
-        }
+        i: {j: reparam_wrapper(c0, c1, i, j, **kwargs) for j in num_functions}
         for i in num_layers
     }
 
 
-def plot_depth_convergence(d, ax=None, subset=None, log=True, label_identifier="M", **kwargs):
+def plot_depth_convergence(
+    d, ax=None, subset=None, log=True, label_identifier="M", **kwargs
+):
     E = depth_convergence(d)
     N = list(width_convergence(d))
 
@@ -81,11 +124,14 @@ def plot_depth_convergence(d, ax=None, subset=None, log=True, label_identifier="
     for num_funcs, error in E.items():
         if num_funcs in subset or subset is None:
             if log:
-                ax.semilogy(N, error, label=f"${label_identifier}={num_funcs}$", **kwargs)
+                ax.semilogy(
+                    N, error, label=f"${label_identifier}={num_funcs}$", **kwargs
+                )
             else:
                 ax.plot(N, error, label=f"${label_identifier}={num_funcs}$", **kwargs)
     ax.set_xticks(N)
     return ax
+
 
 def plot_width_convergence(d, ax=None, subset=None, log=True, **kwargs):
     E = width_convergence(d)
@@ -117,34 +163,45 @@ def plot_curve_convergences(savename, figblock):
 
     # Define Curves
     c1 = Infinity()
-    c0 = c1.compose(g)
+    c0 = ComposedCurve(c1, g)
 
-    num_layers_list = list(range(1, 16))
-    num_functions_list = list(range(1, 16))
-    subset = [1, 3, 5, 7, 10, 15]
-    # num_layers_list = list(range(1, 4))
-    # num_functions_list = list(range(1, 4))
-    # subset = [1, 2, 3]
-
+    num_layers_list = list(range(1, 25))
+    num_functions_list = list(range(1, 25))
+    subset = [1, 3, 5, 7, 10, 15, 23, 24]
 
     d = create_convergence_dict(
-        c0, c1, num_layers_list, num_functions_list, curve_reparametrization, transform="qmap", logger=Silent())
-
+        c0,
+        c1,
+        num_layers_list,
+        num_functions_list,
+        curve_reparametrization,
+        transform="qmap",
+        logger=Silent(),
+        max_iter=500,
+        k=1024,
+        device="cuda"
+    )
+    with open("curve-converge.json", "w") as f:
+        json.dump(d, f)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 3))
     ax1.set_prop_cycle(MONOCHROME)
-    plot_depth_convergence(d, ax1, subset=subset)#, marker="o")
+    plot_depth_convergence(d, ax1, subset=subset)
     ax1.legend()
     ax1.set_xlabel("$L$", fontsize=18)
+    ax1.set_ylim(1e-7, 10)
+    ax1.set_xticks(num_layers_list[::2], num_layers_list[::2])
 
     ax2.set_prop_cycle(MONOCHROME)
-    plot_width_convergence(d, ax2, subset=subset)#, marker="o")
+    plot_width_convergence(d, ax2, subset=subset)
     ax2.legend(loc=3)
     ax2.set_xlabel("$M$", fontsize=18)
+    ax2.set_ylim(1e-7, 10)
+    ax2.set_xticks(num_functions_list[::2], num_functions_list[::2])
     savefig(savename)
+    savefig(savename, suffix=".eps")
     if figblock:
         plt.show(block=figblock)
-
 
 
 def plot_surface_convergences(savename, figblock):
@@ -154,27 +211,44 @@ def plot_surface_convergences(savename, figblock):
     num_layers_list = list(range(1, 16))
     num_functions_list = list(range(1, 16))
     subset = [1, 3, 5, 7, 10, 15]
-    # num_layers_list = list(range(1, 4))
-    # num_functions_list = list(range(1, 4))
-    # subset = [1, 2, 3]
 
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     d = create_convergence_dict(
-        f0, f1, num_layers_list, num_functions_list, surface_reparametrization, transform="qmap", logger=Silent(), device="cuda")
+        f0,
+        f1,
+        num_layers_list,
+        num_functions_list,
+        surface_reparametrization,
+        transform="qmap",
+        k=32,
+        logger=Silent(),
+        device=device,
+    )
+    with open("surface-converge.json", "w") as f:
+        json.dump(d, f)
 
     fig, (ax3, ax4) = plt.subplots(1, 2, figsize=(12, 3))
     ax3.set_prop_cycle(MONOCHROME)
-    plot_depth_convergence(d, ax3, subset=subset, label_identifier="N")#, marker="o")
-    ax3.legend(loc=3)
+    plot_depth_convergence(d, ax3, subset=subset, label_identifier="N")
+    ax3.legend(loc="lower left")
     ax3.set_xlabel("$L$", fontsize=18)
 
     ax4.set_prop_cycle(MONOCHROME)
-    plot_width_convergence(d, ax4, subset=subset)#, marker="o")
+    plot_width_convergence(d, ax4, subset=subset)
     ax4.legend(loc=3)
     ax4.set_xlabel("$N$", fontsize=18)
     savefig(savename)
+    savefig(savename, suffix=".eps")
     if figblock:
         plt.show(block=figblock)
 
+
 if __name__ == "__main__":
-    plot_curve_convergences("Fig10.eps", False)
-    plot_surface_convergences("Fig11.eps", False)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--show", action="store_true")
+    args = parser.parse_args()
+    print()
+    # plot_curve_convergences("Fig10.png", args.show)
+    plot_surface_convergences("Fig11.png", args.show)
