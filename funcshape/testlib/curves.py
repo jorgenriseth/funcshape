@@ -21,6 +21,12 @@ class Infinity(Curve):
             lambda x: torch.sin(4*pi*x)
         ))
 
+    def derivative(self, X, h=0.0001):
+        return torch.cat([
+            -2*pi*torch.sin(2*pi*X),
+            4*pi*torch.cos(4*pi*X)
+        ], dim=-1)
+
 
 class HalfCircle(Curve):
     def __init__(self, transform="qmap"):

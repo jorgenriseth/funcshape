@@ -20,11 +20,11 @@ class SineSeries(CurveLayer):
     def derivative(self, x, h=None):
         return 1. + torch.cos(pi * self.nvec * x) @ self.weights
 
-    def project(self):
+    def project(self, eps=1e-6):
         with torch.no_grad():
             norm = self.weights.norm(p=1)
-            if norm > 1.0 - 1e-6:
-                self.weights *= (1 - 1e-6) / norm
+            if norm > 1.0 - eps:
+                self.weights *= (1 - eps) / norm
 
     def to(self, device):
         self.nvec = self.nvec.to(device)
