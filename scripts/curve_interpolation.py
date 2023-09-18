@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import matplotlib
 from matplotlib import cm
 from matplotlib.colors import Normalize
 
@@ -44,12 +45,13 @@ def plot_curve_interpolation(savename, figblock=True, colormap='jet'):
     y = RN(x)
     rafter = r.compose(RN)
 
+    h = 1e-3
     # Interpolate
     numsteps=10
     curves = linear_interpolate(c1, c2, steps=numsteps)
     curves_after = linear_interpolate(c1, c2.compose(RN), steps=numsteps)
-    srvts = geodesic(q, rafter, steps=numsteps)
-    colors = cm.get_cmap(colormap)(np.linspace(0, 1, numsteps))  # Change colormap here.
+    srvts = geodesic(lambda x: q(x, h=h), lambda x: rafter(x, h=h), steps=numsteps)
+    colors = matplotlib.colormaps[colormap](np.linspace(0, 1, numsteps))  # Change colormap here.
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 4))
     [plot_curve(ci, ax=ax1, color=colori, npoints=601) for ci, colori in zip(curves, colors)]
@@ -76,7 +78,14 @@ def plot_curve_interpolation(savename, figblock=True, colormap='jet'):
     fig.colorbar(cm.ScalarMappable(norm=norm, cmap=colormap), cax=cbar_ax)
     cbar_ax.text(-1.8, 0.45, r"$\tau$", fontsize=16)
     savefig(savename)
-    plt.show(block=figblock)
+    if figblock:
+        plt.show(block=figblock)
 
 if __name__ == "__main__":
-    plot_curve_interpolation("Fig5.eps", False, "inferno")
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--show", action="store_true")
+    args = parser.parse_args()
+    print()
+
+    plot_curve_interpolation("Fig5.eps", args.show, "inferno")

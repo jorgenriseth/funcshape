@@ -37,4 +37,3 @@ class SurfaceLayer(DeepShapeLayer):
 class CurveLayer(DeepShapeLayer):
     def derivative(self, x, h=1e-4):
         return central_differences(self, x, h)
-

@@ -76,4 +76,10 @@ def interpolate_digits(savename, figblock=True):
     plt.show(block=figblock)
 
 if __name__ == "__main__":
-    interpolate_digits("Fig9.png", False)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--show", action="store_true")
+    args = parser.parse_args()
+    print()
+    interpolate_digits("Fig9.eps", args.show)

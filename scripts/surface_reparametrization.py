@@ -7,14 +7,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm, colors
 
-from funcshape.testlib.surfaces import HyperbolicParaboloid, RotationDiffeomorphism, CylinderWrap, LogStepQuadratic
-
-from funcshape.transforms import Qmap2D, SRNF
-from funcshape.visual import (
-    get_common_colornorm,
-    plot_surface,
-    plot_diffeomorphism_2d
+from funcshape.testlib.surfaces import (
+    HyperbolicParaboloid,
+    RotationDiffeomorphism,
+    CylinderWrap,
+    LogStepQuadratic,
 )
+from funcshape.surface import ComposedSurface
+from funcshape.transforms import Qmap2D, SRNF
+from funcshape.visual import get_common_colornorm, plot_surface, plot_diffeomorphism_2d
 from funcshape.networks import SurfaceReparametrizer
 from funcshape.layers.sinefourier import SineFourierLayer
 from funcshape.loss import SurfaceDistance
@@ -23,17 +24,18 @@ from funcshape.logging import Logger
 
 from savefig import savefig
 
+
 def setup_case1():
     f = HyperbolicParaboloid()
     γ = RotationDiffeomorphism()
     g = f.compose(γ)
+    g = ComposedSurface(f, γ)
     q = SRNF(g)
     r = SRNF(f)
 
-    RN = SurfaceReparametrizer(
-        [SineFourierLayer(10) for _ in range(10)]
-    )
+    RN = SurfaceReparametrizer([SineFourierLayer(10) for _ in range(10)])
     return f, γ, g, q, r, RN
+
 
 def setup_case2():
     f = CylinderWrap()
@@ -43,12 +45,9 @@ def setup_case2():
     r = Qmap2D(f)
 
     # Define reparametrization-network
-    RN = SurfaceReparametrizer(
-        [SineFourierLayer(20) for _ in range(20)]
-    )
+    RN = SurfaceReparametrizer([SineFourierLayer(20) for _ in range(20)])
 
     return f, γ, g, q, r, RN
-
 
 
 def reparametrize_and_plot(savename, setup_case, figblock=False):
@@ -60,18 +59,21 @@ def reparametrize_and_plot(savename, setup_case, figblock=False):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     RN.to(device)
-    loss_func = SurfaceDistance(q, r, k=32, h=None).to(device)
+    loss_func = SurfaceDistance(q, r, k=32, h=1e-3).to(device)
 
-    optimizer = optim.LBFGS(RN.parameters(), max_iter=30, line_search_fn="strong_wolfe")
+    optimizer = optim.LBFGS(
+        RN.parameters(), max_iter=100, line_search_fn="strong_wolfe"
+    )
     errors = reparametrize(RN, loss_func, optimizer, 1, Logger(1))
-    RN.to("cpu"), loss_func.to("cpu"); # Need on CPU for plotting.
+    RN.to("cpu"), loss_func.to("cpu")
+    # Need on CPU for plotting.
     RN.detach()
 
     # Reparametrize f
     fafter = f.compose(RN)
 
     # Create Coloring Functions for plotting
-    k = 256 # Points per dimension (k^2 points total)
+    k = 256  # Points per dimension (k^2 points total)
     camera = (35, 225)
     norm = get_common_colornorm((f, g, fafter), k=k)
 
@@ -91,7 +93,7 @@ def reparametrize_and_plot(savename, setup_case, figblock=False):
     plot_surface(fafter, ax=ax3, k=k, colornorm=norm, camera=camera)
     ax3.set_title(r"(c) Reparametrized surface $f \circ \psi$", fontsize=16)
 
-    # Plot Diffeomorphisms. 
+    # Plot Diffeomorphisms.
     ax4 = fig.add_subplot(gs[1, 1:3])
     ax5 = fig.add_subplot(gs[1, 3:5])
 
@@ -109,13 +111,19 @@ def reparametrize_and_plot(savename, setup_case, figblock=False):
 
     plt.figure()
     plt.semilogy(errors)
-    plt.axhline(0., ls="--", c="black")
+    plt.axhline(0.0, ls="--", c="black")
     plt.ylabel("Error", fontsize=16)
     plt.xlabel("Iteration", fontsize=16)
     plt.title("Convergence Plot")
-    plt.show(block=figblock)  
+    plt.show(block=figblock)
 
 
 if __name__ == "__main__":
-    reparametrize_and_plot("Fig7.png", setup_case1, False)
-    reparametrize_and_plot("Fig8.png", setup_case2, False)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--show", action="store_true")
+    args = parser.parse_args()
+    print()
+    reparametrize_and_plot("Fig7.eps", setup_case1, args.show)
+    reparametrize_and_plot("Fig8.eps", setup_case2, args.show)

@@ -18,12 +18,12 @@ def jacobian(f, x, h=1e-4):
 
 
 def batch_determinant(B):
-    """ Compute determinant of a batch of 2x2 matrices. """
+    """Compute determinant of a batch of 2x2 matrices."""
     assert B.dim() == 3, f"Dim.shape should be (K, 2, 2), got {B.shape}"
     return (B[:, 0, 0] * B[:, 1, 1] - B[:, 1, 0] * B[:, 0, 1]).view(-1, 1)
 
 
 def batch_trace(B):
-    """ Compute trace of a batch of 2x2 matrices. """
+    """Compute trace of a batch of 2x2 matrices."""
     assert B.dim() == 3, f"Dim.shape should be (K, 2, 2), got {B.shape}"
     return (B[:, 0, 0] + B[:, 1, 1]).view(-1, 1)

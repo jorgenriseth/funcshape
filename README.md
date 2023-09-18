@@ -32,20 +32,6 @@ The image data may be downloaded by running
 ```bash
 ./download-mnist.sh
 ```
-
-
-## Citing
-Please use the following citation if you are building upon our work,
-```
-[Paper here]
-```
-
-If you rather want to explicitly refer to something from the implementation, you may use
-
-```
-[Zenodo Code Here]
-```
-
 ---
 ## Contents
 The main part of the source code is defined within the `funcshape`  folder. The folder contains the following modules:
