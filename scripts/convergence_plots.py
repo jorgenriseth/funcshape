@@ -250,5 +250,5 @@ if __name__ == "__main__":
     parser.add_argument("--show", action="store_true")
     args = parser.parse_args()
     print()
-    # plot_curve_convergences("Fig10.png", args.show)
+    plot_curve_convergences("Fig10.png", args.show)
     plot_surface_convergences("Fig11.png", args.show)
